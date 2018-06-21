@@ -60,10 +60,10 @@ class MultivariateNormalInverseGammaTest(tf.test.TestCase):
         y = np.random.normal(0, 1, [10, 1]).astype('float32')
         patient = patient.next(x, y)
 
-        self.assertAllClose([[-0.201125], [-0.109042]], patient.sample())
-        self.assertAllClose([[-0.03634], [-0.015134]],
+        self.assertAllClose([[-0.201125], [-0.117803]], patient.sample())
+        self.assertAllClose([[-0.03634], [-0.094946]],
                             patient.sample())
-        self.assertAllClose([[-0.215406], [0.163388]], patient.sample())
+        self.assertAllClose([[-0.215406], [0.160784]], patient.sample())
 
 
 if __name__ == '__main__':

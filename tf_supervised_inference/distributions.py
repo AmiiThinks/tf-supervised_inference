@@ -52,12 +52,10 @@ class MultivariateNormal(object):
             unscaled_means += normal_prior.weighted_precision_sums
 
         L = tf.cholesky(self.precision)
-        U = tf.transpose(L)
-        self.means = tf.matrix_triangular_solve(
-            U, tf.matrix_triangular_solve(L, unscaled_means), lower=False)
+        self.means = tf.cholesky_solve(L, unscaled_means)
 
         self.covariance_scale = tf.matrix_triangular_solve(
-            U, tf.eye(L.shape[0].value), lower=False)
+            L, tf.eye(L.shape[0].value))
 
         self.weighted_precision_sums = self.precision @ self.means
         self.quadratic_form = tf.matmul(
