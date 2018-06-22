@@ -16,16 +16,28 @@ def fourier_basis(x, w, b):
 
 def poly_basis(x, degree):
     return tf.concat(
-        [1.0 / (i + 1) * x**(i + 1) for i in range(degree)],
-        axis=tf.rank(x) - 1)
+        [1.0 / (i + 1) * x**(i + 1) for i in range(degree)], axis=-1)
+
+
+def multi_predict(inputs, *functions):
+    return tf.stack([f(inputs) for f in functions], axis=-1)
+
+
+def empirical_predictive_distribution(inputs, *functions):
+    ys = multi_predict(inputs, *functions)
+    counts, sums, sum_of_squares, _ = tf.nn.sufficient_statistics(
+        ys, axes=[-1])
+    means = sums / counts
+    var = (sum_of_squares - (sums**2 / counts)) / (counts - 1)
+    return means, var
 
 
 class SyntheticData(object):
     @classmethod
     def from_finite_generator(cls, data_generator, **kwargs):
         phi, y = zip(*data_generator)
-        phi = np.concatenate(phi, axis=0)
-        y = np.concatenate(y, axis=0)
+        phi = np.stack(phi)
+        y = np.stack(y)
         return cls(phi, y, **kwargs)
 
     def __init__(self, phi, y, threshold=0):

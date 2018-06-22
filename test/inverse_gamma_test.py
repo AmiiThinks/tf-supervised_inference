@@ -42,15 +42,8 @@ class InverseGammaTest(tf.test.TestCase):
                 shape, scale = params[i]
                 patient = InverseGamma(shape, scale)
 
-                samples = tf.concat(
-                    [
-                        tf.expand_dims(patient.sample(), axis=0)
-                        for _ in range(500)
-                    ],
-                    axis=0)
-
+                samples = tf.stack([patient.sample() for _ in range(500)])
                 hist = tf.histogram_fixed_width(samples, [0.0, 10.0], nbins=10)
-
                 self.assertAllClose(hist, x)
 
     def test_next(self):

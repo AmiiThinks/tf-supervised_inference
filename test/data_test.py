@@ -9,13 +9,27 @@ from tf_supervised_inference.data import \
     NoisyNoiselessSyntheticDataPair, \
     poly_basis, \
     normal_fourier_affine_params, \
-    fourier_basis
+    fourier_basis, \
+    empirical_predictive_distribution
 
 
 class DataTest(tf.test.TestCase):
     def setUp(self):
         tf.set_random_seed(42)
         np.random.seed(42)
+
+    def test_empirical_predictive_distribution(self):
+        fs = [lambda x: 1 * x + 1, lambda x: 2 * x + 1, lambda x: 3 * x + 1]
+        x = np.random.uniform(size=[10, 1])
+
+        patient_mean, patient_var = empirical_predictive_distribution(
+            x, *fs)
+
+        ys = [f(x) for f in fs]
+        ys = np.stack(ys, axis=-1)
+
+        self.assertAllClose(ys.mean(axis=-1), patient_mean)
+        self.assertAllClose(ys.var(axis=-1, ddof=1), patient_var)
 
     def test_random_fourier_basis(self):
         x = np.random.uniform(size=[10, 2])
