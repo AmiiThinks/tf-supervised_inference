@@ -5,8 +5,8 @@ except:
     pass
 import numpy as np
 from tf_supervised_inference.data import \
-    SyntheticData, \
-    NoisyNoiselessSyntheticDataPair, \
+    Data, \
+    TrainingValidationDataPair, \
     poly_basis, \
     normal_fourier_affine_params, \
     fourier_basis, \
@@ -22,8 +22,7 @@ class DataTest(tf.test.TestCase):
         fs = [lambda x: 1 * x + 1, lambda x: 2 * x + 1, lambda x: 3 * x + 1]
         x = np.random.uniform(size=[10, 1])
 
-        patient_mean, patient_var = empirical_predictive_distribution(
-            x, *fs)
+        patient_mean, patient_var = empirical_predictive_distribution(x, *fs)
 
         ys = [f(x) for f in fs]
         ys = np.stack(ys, axis=-1)
@@ -97,45 +96,26 @@ class DataTest(tf.test.TestCase):
         self.assertAllClose(x**2 / 2.0, patient[:, 1:2])
         self.assertAllClose(x**3 / 3.0, patient[:, 2:3])
 
-    def test_init_synthetic_data(self):
-        patient = SyntheticData(
-            np.random.normal(size=[10, 2]), np.random.normal(size=[10, 1]), 0)
+    def test_init_data(self):
+        patient = Data(
+            np.random.normal(size=[10, 2]), np.random.normal(size=[10, 1]))
 
         assert patient.num_examples() == 10
         assert patient.num_features() == 2
         assert patient.num_outputs() == 1
-        self.assertAllGreater(patient.good_y(), 0)
-        self.assertAllLess(patient.bad_y(), 0)
-        assert len(patient.good_phi()) == len(patient.good_y())
-        assert len(patient.bad_phi()) == len(patient.bad_y())
 
     def test_init_noisy_noiseless_synthetic_data_pair(self):
-        patient = NoisyNoiselessSyntheticDataPair.from_stddev(
-            SyntheticData(
-                np.random.normal(size=[10, 2]),
-                np.random.normal(size=[10, 1]),
-                0
-            ),
-            1
-        )  # yapf:disable
+        d = Data(
+            np.random.normal(size=[10, 2]), np.random.normal(size=[10, 1]))
+        patient = TrainingValidationDataPair(d.with_noise(1), d)
 
-        assert patient.noiseless.num_examples() == 10
-        assert patient.noiseless.num_features() == 2
-        assert patient.noiseless.num_outputs() == 1
-        self.assertAllGreater(patient.noiseless.good_y(), 0)
-        self.assertAllLess(patient.noiseless.bad_y(), 0)
-        assert len(patient.noiseless.good_phi()) == len(
-            patient.noiseless.good_y())
-        assert len(patient.noiseless.bad_phi()) == len(
-            patient.noiseless.bad_y())
+        assert patient.t.num_examples() == 10
+        assert patient.t.num_features() == 2
+        assert patient.t.num_outputs() == 1
 
-        assert patient.noisy.num_examples() == 10
-        assert patient.noisy.num_features() == 2
-        assert patient.noisy.num_outputs() == 1
-        self.assertAllGreater(patient.noisy.good_y(), 0)
-        self.assertAllLess(patient.noisy.bad_y(), 0)
-        assert len(patient.noisy.good_phi()) == len(patient.noisy.good_y())
-        assert len(patient.noisy.bad_phi()) == len(patient.noisy.bad_y())
+        assert patient.v.num_examples() == 10
+        assert patient.v.num_features() == 2
+        assert patient.v.num_outputs() == 1
 
 
 if __name__ == '__main__':
