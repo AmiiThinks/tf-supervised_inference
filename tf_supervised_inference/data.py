@@ -1,5 +1,12 @@
+import tensorflow as tf
 import numpy as np
 from collections import namedtuple
+
+
+def poly_basis(x, degree):
+    return tf.concat(
+        [1.0 / (i + 1) * x ** (i + 1) for i in range(degree)],
+        axis=tf.rank(x) - 1)
 
 
 class SyntheticData(object):
