@@ -127,4 +127,4 @@ class BayesianLinearRegressionDistribution(object):
         return [LinearModel(self.posterior.sample()) for _ in range(n)]
 
     def maximum_a_posteriori_estimate(self):
-        return self.normal_prior.maximum_a_posteriori_estimate()
+        return self.posterior.maximum_a_posteriori_estimate()
