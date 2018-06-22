@@ -75,7 +75,7 @@ class MultivariateNormal(object):
     def covariance(self):
         return self.covariance_scale @ tf.transpose(self.covariance_scale)
 
-    def maximum_aposteriori_estimate(self):
+    def maximum_a_posteriori_estimate(self):
         return LinearModel(self.means)
 
 
@@ -110,8 +110,8 @@ class MultivariateNormalInverseGamma(object):
 
         return self.__class__(normal_posterior, ig_posterior)
 
-    def maximum_aposteriori_estimate(self):
-        return self.normal_prior.maximum_aposteriori_estimate()
+    def maximum_a_posteriori_estimate(self):
+        return self.normal_prior.maximum_a_posteriori_estimate()
 
 
 class BayesianLinearRegressionDistribution(object):
@@ -125,3 +125,6 @@ class BayesianLinearRegressionDistribution(object):
 
     def sample(self, n=1):
         return [LinearModel(self.posterior.sample()) for _ in range(n)]
+
+    def maximum_a_posteriori_estimate(self):
+        return self.normal_prior.maximum_a_posteriori_estimate()
