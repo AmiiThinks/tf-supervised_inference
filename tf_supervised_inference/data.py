@@ -3,9 +3,20 @@ import numpy as np
 from collections import namedtuple
 
 
+def normal_fourier_affine_params(shape, mean=0, gaussian_kernel_param=1.0):
+    w = tf.random_normal(
+        mean=mean, stddev=2 * gaussian_kernel_param, shape=shape)
+    b = tf.random_uniform([], minval=-np.pi, maxval=np.pi)
+    return w, b
+
+
+def fourier_basis(x, w, b):
+    return tf.cos(x @ w + b)
+
+
 def poly_basis(x, degree):
     return tf.concat(
-        [1.0 / (i + 1) * x ** (i + 1) for i in range(degree)],
+        [1.0 / (i + 1) * x**(i + 1) for i in range(degree)],
         axis=tf.rank(x) - 1)
 
 
