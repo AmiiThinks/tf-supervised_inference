@@ -1,4 +1,5 @@
 import tensorflow as tf
+from .__init__ import LinearModel
 
 
 class InverseGamma(object):
@@ -74,6 +75,9 @@ class MultivariateNormal(object):
     def covariance(self):
         return self.covariance_scale @ tf.transpose(self.covariance_scale)
 
+    def maximum_aposteriori_estimate(self):
+        return LinearModel(self.means)
+
 
 class MultivariateNormalInverseGamma(object):
     def __init__(self, normal_prior, ig_prior):
@@ -106,15 +110,11 @@ class MultivariateNormalInverseGamma(object):
 
         return self.__class__(normal_posterior, ig_posterior)
 
+    def maximum_aposteriori_estimate(self):
+        return self.normal_prior.maximum_aposteriori_estimate()
+
 
 class BayesianLinearRegressionDistribution(object):
-    class LinearModel(object):
-        def __init__(self, weights):
-            self.weights = [weights]
-
-        def predict(self, phi):
-            return phi @ self.weights[0]
-
     def __init__(self, prior):
         self.prior = prior
         self.posterior = self.prior
@@ -124,4 +124,4 @@ class BayesianLinearRegressionDistribution(object):
         return self
 
     def sample(self, n=1):
-        return [self.LinearModel(self.posterior.sample()) for _ in range(n)]
+        return [LinearModel(self.posterior.sample()) for _ in range(n)]
