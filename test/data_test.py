@@ -104,9 +104,10 @@ class DataTest(tf.test.TestCase):
         assert patient.num_features() == 2
         assert patient.num_outputs() == 1
 
-    def test_init_noisy_noiseless_synthetic_data_pair(self):
+    def test_init_training_validation_data_pair(self):
         d = Data(
-            np.random.normal(size=[10, 2]), np.random.normal(size=[10, 1]))
+            np.random.normal(size=[10, 2]).astype('float32'),
+            np.random.normal(size=[10, 1]).astype('float32'))
         patient = TrainingValidationDataPair(d.with_noise(1), d)
 
         assert patient.t.num_examples() == 10

@@ -32,22 +32,27 @@ def empirical_predictive_distribution(inputs, *functions):
     return means, var
 
 
-class Data(namedtuple('_Data', ['phi', 'y'])):
+class Data(object):
+    def __init__(self, phi, y):
+        self.phi = tf.convert_to_tensor(phi)
+        self.y = tf.convert_to_tensor(y)
+
     def with_noise(self, stddev=1.0):
-        return self.__class__(self.phi, (self.y + np.random.normal(
-            loc=0, scale=stddev, size=self.y.shape).astype('float32')))
+        return self.__class__(self.phi, (self.y + tf.random_normal(
+            mean=0, stddev=stddev, shape=self.y.shape)))
 
     def clone(self, phi=lambda x: x):
         return self.__class__(phi(self.phi), self.y)
 
     def num_examples(self):
-        return self.phi.shape[0]
+        n = self.phi.shape[0].value
+        return tf.shape(self.phi.shape)[0] if n is None else n
 
     def num_features(self):
-        return self.phi.shape[1]
+        return self.phi.shape[1].value
 
     def num_outputs(self):
-        return self.y.shape[1]
+        return self.y.shape[1].value
 
 
 class TrainingValidationDataPair(

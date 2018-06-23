@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='tf_supervised_inference',
-    version='2.0.0',
+    version='2.0.1',
     license='',
     packages=find_packages(),
     install_requires=[
