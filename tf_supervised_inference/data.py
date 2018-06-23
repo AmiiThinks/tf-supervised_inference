@@ -33,39 +33,29 @@ def empirical_predictive_distribution(inputs, *functions):
 
 
 class Data(namedtuple('_Data', ['phi', 'y'])):
-  def with_noise(self, stddev=1.0):
-    return self.__class__(
-      self.phi,
-      (
-        self.y
-        + np.random.normal(
-          loc=0,
-          scale=stddev,
-          size=self.y.shape
-        ).astype('float32')
-      )
-    )
+    def with_noise(self, stddev=1.0):
+        return self.__class__(self.phi, (self.y + np.random.normal(
+            loc=0, scale=stddev, size=self.y.shape).astype('float32')))
 
-  def clone(self, phi=lambda x: x):
-    return self.__class__(phi(self.phi), self.y)
+    def clone(self, phi=lambda x: x):
+        return self.__class__(phi(self.phi), self.y)
 
-  def num_examples(self):
-    return self.phi.shape[0]
+    def num_examples(self):
+        return self.phi.shape[0]
 
-  def num_features(self):
-    return self.phi.shape[1]
+    def num_features(self):
+        return self.phi.shape[1]
 
-  def num_outputs(self):
-    return self.y.shape[1]
+    def num_outputs(self):
+        return self.y.shape[1]
 
 
 class TrainingValidationDataPair(
-    namedtuple('_TrainingValidationDataPair', ['t', 'v'])
-):
-  def all(self):
-    return Data(
-        tf.concat([self.t.phi, self.v.phi], axis=0),
-        tf.concat([self.t.y, self.v.y], axis=0))
+        namedtuple('_TrainingValidationDataPair', ['t', 'v'])):
+    def all(self):
+        return Data(
+            tf.concat([self.t.phi, self.v.phi], axis=0),
+            tf.concat([self.t.y, self.v.y], axis=0))
 
-  def clone(self, phi=lambda x: x):
-    return self.__class__(self.t.clone(phi), self.v.clone(phi))
+    def clone(self, phi=lambda x: x):
+        return self.__class__(self.t.clone(phi), self.v.clone(phi))
