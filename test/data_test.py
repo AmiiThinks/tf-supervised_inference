@@ -6,7 +6,7 @@ except:
 import numpy as np
 from tf_supervised_inference.data import \
     Data, \
-    TrainingValidationDataPair, \
+    NamedDataSets, \
     poly_basis, \
     normal_fourier_affine_params, \
     fourier_basis, \
@@ -104,19 +104,39 @@ class DataTest(tf.test.TestCase):
         assert patient.num_features() == 2
         assert patient.num_outputs() == 1
 
-    def test_init_training_validation_data_pair(self):
+    def test_named_data_sets(self):
         d = Data(
             np.random.normal(size=[10, 2]).astype('float32'),
             np.random.normal(size=[10, 1]).astype('float32'))
-        patient = TrainingValidationDataPair(d.with_noise(1), d)
+        patient = NamedDataSets(training=d.with_noise(1), test=d)
 
-        assert patient.t.num_examples() == 10
-        assert patient.t.num_features() == 2
-        assert patient.t.num_outputs() == 1
+        assert patient.training.num_examples() == 10
+        assert patient.training.num_features() == 2
+        assert patient.training.num_outputs() == 1
 
-        assert patient.v.num_examples() == 10
-        assert patient.v.num_features() == 2
-        assert patient.v.num_outputs() == 1
+        assert patient.test.num_examples() == 10
+        assert patient.test.num_features() == 2
+        assert patient.test.num_outputs() == 1
+
+        all = patient.all()
+        assert all.num_examples() == 20
+        assert all.num_features() == 2
+        assert all.num_outputs() == 1
+
+        patient = patient.clone(lambda x: tf.concat([x, x, x], axis=1))
+
+        assert patient.training.num_examples() == 10
+        assert patient.training.num_features() == 2 * 3
+        assert patient.training.num_outputs() == 1
+
+        assert patient.test.num_examples() == 10
+        assert patient.test.num_features() == 2 * 3
+        assert patient.test.num_outputs() == 1
+
+        all = patient.all()
+        assert all.num_examples() == 20
+        assert all.num_features() == 2 * 3
+        assert all.num_outputs() == 1
 
 
 if __name__ == '__main__':

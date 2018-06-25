@@ -34,8 +34,18 @@ def empirical_predictive_distribution(inputs, *functions):
 
 class Data(object):
     def __init__(self, phi, y):
-        self.phi = tf.convert_to_tensor(phi)
-        self.y = tf.convert_to_tensor(y)
+        self._data = (tf.convert_to_tensor(phi), tf.convert_to_tensor(y))
+
+    def __iter__(self):
+        return iter(self._data)
+
+    @property
+    def phi(self):
+        return self._data[0]
+
+    @property
+    def y(self):
+        return self._data[1]
 
     def with_noise(self, stddev=1.0):
         return self.__class__(self.phi, (self.y + tf.random_normal(
@@ -55,12 +65,18 @@ class Data(object):
         return self.y.shape[1].value
 
 
-class TrainingValidationDataPair(
-        namedtuple('_TrainingValidationDataPair', ['t', 'v'])):
-    def all(self):
-        return Data(
-            tf.concat([self.t.phi, self.v.phi], axis=0),
-            tf.concat([self.t.y, self.v.y], axis=0))
+def NamedDataSets(**named_data_sets):
+    names, data_sets = zip(*named_data_sets.items())
 
-    def clone(self, phi=lambda x: x):
-        return self.__class__(self.t.clone(phi), self.v.clone(phi))
+    class NamedDataSets(namedtuple('NamedDataSets', names)):
+        def all(self):
+            phis, ys = zip(*self)
+            return Data(tf.concat(phis, axis=0), tf.concat(ys, axis=0))
+
+        def clone(self, phi=lambda x: tf.identity(x)):
+            items = self._asdict().items()
+            return self.__class__(
+                **{name: data.clone(phi)
+                   for name, data in items})
+
+    return NamedDataSets(*data_sets)
