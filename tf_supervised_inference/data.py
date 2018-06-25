@@ -64,6 +64,14 @@ class Data(object):
     def num_outputs(self):
         return self.y.shape[1].value
 
+    def split(self, num_or_size_splits):
+        return [
+            self.__class__(phi, y)
+            for phi, y in zip(
+                tf.split(self.phi, num_or_size_splits),
+                tf.split(self.y, num_or_size_splits))
+        ]
+
 
 def NamedDataSets(**named_data_sets):
     names, data_sets = zip(*named_data_sets.items())

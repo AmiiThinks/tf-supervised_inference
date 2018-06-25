@@ -104,6 +104,29 @@ class DataTest(tf.test.TestCase):
         assert patient.num_features() == 2
         assert patient.num_outputs() == 1
 
+    def test_data_split(self):
+        patient = Data(
+            np.random.normal(size=[10, 2]), np.random.normal(size=[10, 1]))
+
+        d1, d2 = patient.split([7, 3])
+
+        assert d1.num_examples() == 7
+        assert d1.num_features() == 2
+        assert d1.num_outputs() == 1
+
+        assert d2.num_examples() == 3
+        assert d2.num_features() == 2
+        assert d2.num_outputs() == 1
+
+        d = patient.split(5)
+        assert len(d) == 5
+
+        for di in d:
+            assert di.num_examples() == 2
+            assert di.num_features() == 2
+            assert di.num_outputs() == 1
+
+
     def test_named_data_sets(self):
         d = Data(
             np.random.normal(size=[10, 2]).astype('float32'),
