@@ -39,6 +39,30 @@ class Data(object):
     def __iter__(self):
         return iter(self._data)
 
+    def random_training_and_validation_sets(self,
+                                            num_shuffles=1,
+                                            training_proportion=0.5):
+        for shuffle in range(num_shuffles):
+            shuffle_indices = np.random.randint(
+                self.num_examples(), size=[self.num_examples()])
+
+            shuffled_data = Data(
+                tf.gather(self.phi, shuffle_indices),
+                tf.gather(self.y, shuffle_indices))
+
+            num_training_examples = max(
+                1,
+                min(
+                    int(np.ceil(self.num_examples() * training_proportion)),
+                    self.num_examples() - 1))
+
+            tdata, vdata = shuffled_data.split([
+                num_training_examples,
+                self.num_examples() - num_training_examples
+            ])
+
+            yield tdata, vdata
+
     @property
     def phi(self):
         return self._data[0]

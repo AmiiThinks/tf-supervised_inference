@@ -126,7 +126,6 @@ class DataTest(tf.test.TestCase):
             assert di.num_features() == 2
             assert di.num_outputs() == 1
 
-
     def test_named_data_sets(self):
         d = Data(
             np.random.normal(size=[10, 2]).astype('float32'),
@@ -160,6 +159,24 @@ class DataTest(tf.test.TestCase):
         assert all.num_examples() == 20
         assert all.num_features() == 2 * 3
         assert all.num_outputs() == 1
+
+    def test_data_random_training_and_validation_sets(self):
+        patient = Data(
+            np.random.normal(size=[10, 2]), np.random.normal(size=[10, 1]))
+
+        for training_proportion, num_train, num_valid in [
+            (0.0, 1, 9), (0.2, 2, 8), (0.5, 5, 5), (0.7, 7, 3), (1.0, 9, 1)
+        ]:
+            with self.subTest(training_proportion):
+                for d1, d2 in patient.random_training_and_validation_sets(
+                        training_proportion=training_proportion):
+                    assert d1.num_examples() == num_train
+                    assert d1.num_features() == 2
+                    assert d1.num_outputs() == 1
+
+                    assert d2.num_examples() == num_valid
+                    assert d2.num_features() == 2
+                    assert d2.num_outputs() == 1
 
 
 if __name__ == '__main__':
