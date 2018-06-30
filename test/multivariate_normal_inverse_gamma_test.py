@@ -14,12 +14,14 @@ class MultivariateNormalInverseGammaTest(tf.test.TestCase):
         np.random.seed(42)
 
     def test_init(self):
-        ig = InverseGamma.from_mode_and_shape(1.0, 2.1)  # Broad prior around 1
+        ig = InverseGamma.from_log_mode_and_log_shape(
+            tf.log(1.0), tf.log(2.1))  # Broad prior around 1
         self.assertAllClose(ig.mode(), 1.0)
         self.assertAllClose(ig.variance(), 7.22013523666416)
 
-        normal = MultivariateNormal.from_shared_mean_measurement_variance_and_effective_sample_size(
-            mean=0, m_var=1.0, ess=0.1, num_dims=2)  # Broad prior around 0
+        normal = MultivariateNormal.from_shared_mean_and_log_precision(
+            mean=0, log_precision=tf.log(0.1),
+            num_dims=2)  # Broad prior around 0
         self.assertAllClose(0.1, normal.precision[0, 0])
         self.assertAllClose(0.1, normal.precision[1, 1])
 
@@ -27,12 +29,14 @@ class MultivariateNormalInverseGammaTest(tf.test.TestCase):
         assert patient is not None
 
     def test_sample(self):
-        ig = InverseGamma.from_mode_and_shape(1.0, 2.1)  # Broad prior around 1
+        ig = InverseGamma.from_log_mode_and_log_shape(
+            tf.log(1.0), tf.log(2.1))  # Broad prior around 1
         self.assertAllClose(ig.mode(), 1.0)
         self.assertAllClose(ig.variance(), 7.22013523666416)
 
-        normal = MultivariateNormal.from_shared_mean_measurement_variance_and_effective_sample_size(
-            mean=0, m_var=1.0, ess=0.1, num_dims=2)  # Broad prior around 0
+        normal = MultivariateNormal.from_shared_mean_and_log_precision(
+            mean=0, log_precision=tf.log(0.1),
+            num_dims=2)  # Broad prior around 0
         self.assertAllEqual([2, 1], tf.shape(normal.means))
         self.assertAllEqual([2, 2], tf.shape(normal.precision))
         self.assertAllClose(0.1, normal.precision[0, 0])
@@ -42,12 +46,14 @@ class MultivariateNormalInverseGammaTest(tf.test.TestCase):
         self.assertAllClose(patient.sample(), [[0.292883], [-2.993716]])
 
     def test_next(self):
-        ig = InverseGamma.from_mode_and_shape(1.0, 2.1)  # Broad prior around 1
+        ig = InverseGamma.from_log_mode_and_log_shape(
+            tf.log(1.0), tf.log(2.1))  # Broad prior around 1
         self.assertAllClose(ig.mode(), 1.0)
         self.assertAllClose(ig.variance(), 7.22013523666416)
 
-        normal = MultivariateNormal.from_shared_mean_measurement_variance_and_effective_sample_size(
-            mean=0, m_var=1.0, ess=0.1, num_dims=2)  # Broad prior around 0
+        normal = MultivariateNormal.from_shared_mean_and_log_precision(
+            mean=0, log_precision=tf.log(0.1),
+            num_dims=2)  # Broad prior around 0
         self.assertAllEqual([2, 1], tf.shape(normal.means))
         self.assertAllEqual([2, 2], tf.shape(normal.precision))
         self.assertAllClose(0.1, normal.precision[0, 0])
@@ -61,8 +67,7 @@ class MultivariateNormalInverseGammaTest(tf.test.TestCase):
         patient = patient.next(x, y)
 
         self.assertAllClose([[-0.201125], [-0.117803]], patient.sample())
-        self.assertAllClose([[-0.03634], [-0.094946]],
-                            patient.sample())
+        self.assertAllClose([[-0.03634], [-0.094946]], patient.sample())
         self.assertAllClose([[-0.215406], [0.160784]], patient.sample())
 
 

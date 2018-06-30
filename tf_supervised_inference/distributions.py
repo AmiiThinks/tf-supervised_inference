@@ -1,11 +1,15 @@
 import tensorflow as tf
-from .__init__ import LinearModel
+import numpy as np
+from itertools import product
+from tf_supervised_inference.linear_model import LinearModel
 
 
 class InverseGamma(object):
     @classmethod
-    def from_mode_and_shape(cls, mode, shape):
-        scale = mode * (shape + 1)
+    def from_log_mode_and_log_shape(cls, log_mode, log_shape):
+        shape = tf.exp(log_shape)
+        log_adjusted_shape = tf.log(shape + 1)
+        scale = tf.exp(log_mode + log_adjusted_shape)
         return cls(shape, scale)
 
     def __init__(self, shape, scale):
@@ -34,9 +38,8 @@ class InverseGamma(object):
 
 class MultivariateNormal(object):
     @classmethod
-    def from_shared_mean_measurement_variance_and_effective_sample_size(
-            cls, mean, m_var, ess, num_dims):
-        precision = ess / m_var
+    def from_shared_mean_and_log_precision(cls, mean, log_precision, num_dims):
+        precision = tf.exp(log_precision)
         return cls(
             tf.constant(mean / precision, shape=[num_dims, 1]),
             precision * tf.eye(num_dims))
@@ -115,12 +118,39 @@ class MultivariateNormalInverseGamma(object):
 
 
 class BayesianLinearRegressionDistribution(object):
+    @classmethod
+    def all(cls,
+            phi,
+            y,
+            mean_params=[0.0],
+            log_precision_params=np.arange(-5.0, 2.0).astype('float32'),
+            log_ig_mode_params=[-20.0],
+            log_ig_shape_params=[-20.0]):
+        phi = tf.convert_to_tensor(phi)
+        num_features = phi.shape[1].value
+
+        for mean, log_precision, log_ig_mode, log_ig_shape in product(
+                mean_params, log_precision_params, log_ig_mode_params,
+                log_ig_shape_params):
+            ig = InverseGamma.from_log_mode_and_log_shape(
+                log_ig_mode, log_ig_shape)
+            normal = MultivariateNormal.from_shared_mean_and_log_precision(
+                mean=mean, log_precision=log_precision, num_dims=num_features)
+            prior = MultivariateNormalInverseGamma(normal, ig)
+
+            yield (
+                cls(prior).train(phi, y),
+                mean,
+                log_precision,
+                log_ig_mode,
+                log_ig_shape
+            )  # yapf:disable
+
     def __init__(self, prior):
-        self.prior = prior
-        self.posterior = self.prior
+        self.posterior = prior
 
     def train(self, phi, y):
-        self.posterior = self.prior.next(phi, y)
+        self.posterior = self.posterior.next(phi, y)
         return self
 
     def sample(self, n=1):

@@ -19,7 +19,7 @@ class InverseGammaTest(tf.test.TestCase):
 
     def test_sample(self):
         patient = InverseGamma(shape=1.0, scale=2.0)
-        self.assertAlmostEquals(patient.sample().numpy(), 1.155, places=3)
+        self.assertAllClose(patient.sample().numpy(), 1.154769)
 
     def test_summary_stats(self):
         params = [
@@ -52,32 +52,33 @@ class InverseGammaTest(tf.test.TestCase):
         patient = InverseGamma(shape, scale)
         patient = patient.next(len(x), 12.0)
 
-        self.assertAlmostEquals(patient.shape, 1 + 100 / 2.0)
-        self.assertAlmostEquals(patient.scale, 2 + 12.0 / 2.0)
+        self.assertAllClose(patient.shape, 1 + 100 / 2.0)
+        self.assertAllClose(patient.scale, 2 + 12.0 / 2.0)
 
-    def test_from_mode_and_shape(self):
+    def test_from_log_mode_and_log_shape(self):
         params = [
             (1.0, 0.1), (1.0, 1.0), (1.0, 2.0), (1.0, 0.1), (1.0, 10.0),
             (9999.0, 15000.0)
         ]  # yapf: disable
         for shape, scale in params:
             mode = scale / (shape + 1.0)
-            patient = InverseGamma.from_mode_and_shape(mode, shape)
+            patient = InverseGamma.from_log_mode_and_log_shape(
+                tf.log(mode), tf.log(shape))
 
-            self.assertAlmostEquals(patient.shape, shape)
-            self.assertAlmostEquals(patient.scale, scale)
-            self.assertAlmostEquals(patient.mode(), mode)
+            self.assertAllClose(patient.shape, shape)
+            self.assertAllClose(patient.scale, scale)
+            self.assertAllClose(patient.mode(), mode)
 
             if shape > 1:
-                self.assertAlmostEquals(patient.mean(), scale / (shape - 1.0))
+                self.assertAllClose(patient.mean(), scale / (shape - 1.0))
             else:
-                self.assertAlmostEquals(patient.mean(), None)
+                self.assertIsNone(patient.mean())
 
             if shape > 2:
-                self.assertAlmostEquals(patient.variance(), scale**2.0 /
-                                        ((shape - 1.0)**2.0 * (shape - 1.0)))
+                self.assertAllClose(patient.variance(), scale**2.0 /
+                                    ((shape - 1.0)**2.0 * (shape - 1.0)))
             else:
-                self.assertAlmostEquals(patient.variance(), None)
+                self.assertIsNone(patient.variance())
 
 
 if __name__ == '__main__':

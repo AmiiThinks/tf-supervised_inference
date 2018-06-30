@@ -12,21 +12,20 @@ class MultivariateNormalTest(tf.test.TestCase):
         tf.set_random_seed(42)
         np.random.seed(42)
 
-    def test_from_shared_mean_measurement_variance_and_effective_sample_size(
-            self):
-        patient = MultivariateNormal.from_shared_mean_measurement_variance_and_effective_sample_size(
-            0, 1.0, 4, 1)
+    def test_from_shared_mean_and_log_precision(self):
+        patient = MultivariateNormal.from_shared_mean_and_log_precision(
+            0, tf.log(4.0), 1)
         self.assertAllEqual(patient.means, tf.zeros([1, 1]))
         self.assertAllEqual(patient.precision, 4 * tf.eye(1))
 
     def test_sample(self):
-        patient = MultivariateNormal.from_shared_mean_measurement_variance_and_effective_sample_size(
-            0, 1.0, 2, 1)
+        patient = MultivariateNormal.from_shared_mean_and_log_precision(
+            0, tf.log(2.0), 1)
         self.assertAllClose(patient.sample(), [[0.231555]])
 
     def test_next(self):
-        patient = MultivariateNormal.from_shared_mean_measurement_variance_and_effective_sample_size(
-            0, 1.0, 2, 1)
+        patient = MultivariateNormal.from_shared_mean_and_log_precision(
+            0, tf.log(2.0), 1)
 
         num_features = 2
         x = np.random.normal(0, 1, [10, num_features]).astype('float32')
