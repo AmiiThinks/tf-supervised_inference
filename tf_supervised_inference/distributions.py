@@ -51,22 +51,20 @@ class MultivariateNormal(object):
             self.precision = precision
         else:
             self.precision = normal_prior.precision + precision
-
-        if normal_prior is not None:
             unscaled_means += normal_prior.weighted_precision_sums
 
         L = tf.cholesky(self.precision)
         self.means = tf.cholesky_solve(L, unscaled_means)
+        means_t = tf.transpose(self.means)
 
         self.covariance_scale = tf.matrix_triangular_solve(
             L, tf.eye(L.shape[0].value))
 
         self.weighted_precision_sums = self.precision @ self.means
-        self.quadratic_form = tf.matmul(
-            self.means, self.weighted_precision_sums, transpose_a=True)
+        self.quadratic_form = means_t @ self.weighted_precision_sums
 
         self.distribution = tf.contrib.distributions.MultivariateNormalTriL(
-            tf.transpose(self.means), self.covariance_scale)
+            means_t, self.covariance_scale)
 
     def sample(self):
         return tf.transpose(self.distribution.sample())
@@ -80,6 +78,26 @@ class MultivariateNormal(object):
 
     def maximum_a_posteriori_estimate(self):
         return LinearModel(self.means)
+
+
+class ImproperMultivariateNormal(object):
+    @classmethod
+    def from_shared_mean_and_log_precision(cls, mean, log_precision, num_dims):
+        precision = tf.exp(log_precision)
+        return cls(
+            tf.constant(mean, shape=[num_dims, 1]),
+            precision * tf.eye(num_dims))
+
+    def __init__(self, means, precision):
+        self.means = means
+        self.precision = precision
+        self.weighted_precision_sums = self.precision @ self.means
+        self.quadratic_form = tf.matmul(
+            self.means, self.weighted_precision_sums, transpose_a=True)
+
+    def next(self, weighted_feature_sums, empirical_precision):
+        return MultivariateNormal(
+            weighted_feature_sums, empirical_precision, normal_prior=self)
 
 
 class MultivariateNormalInverseGamma(object):
@@ -134,7 +152,7 @@ class BayesianLinearRegressionDistribution(object):
                 log_ig_shape_params):
             ig = InverseGamma.from_log_mode_and_log_shape(
                 log_ig_mode, log_ig_shape)
-            normal = MultivariateNormal.from_shared_mean_and_log_precision(
+            normal = ImproperMultivariateNormal.from_shared_mean_and_log_precision(
                 mean=mean, log_precision=log_precision, num_dims=num_features)
             prior = MultivariateNormalInverseGamma(normal, ig)
 
