@@ -55,16 +55,28 @@ class MultivariateNormal(object):
 
         L = tf.cholesky(self.precision)
         self.means = tf.cholesky_solve(L, unscaled_means)
-        means_t = tf.transpose(self.means)
 
         self.covariance_scale = tf.matrix_triangular_solve(
             L, tf.eye(L.shape[0].value))
 
-        self.weighted_precision_sums = self.precision @ self.means
-        self.quadratic_form = means_t @ self.weighted_precision_sums
-
         self.distribution = tf.contrib.distributions.MultivariateNormalTriL(
-            means_t, self.covariance_scale)
+            tf.transpose(self.means), self.covariance_scale)
+
+        self._weighted_precision_sums = None
+        self._quadratic_form = None
+
+    @property
+    def weighted_precision_sums(self):
+        if self._weighted_precision_sums is None:
+            self._weighted_precision_sums = self.precision @ self.means
+        return self._weighted_precision_sums
+
+    @property
+    def quadratic_form(self):
+        if self._quadratic_form is None:
+            self._quadratic_form = tf.matmul(
+                self.means, self.weighted_precision_sums, transpose_a=True)
+        return self._quadratic_form
 
     def sample(self):
         return tf.transpose(self.distribution.sample())
