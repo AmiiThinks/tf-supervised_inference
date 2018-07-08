@@ -144,6 +144,30 @@ class MultivariateNormalInverseGamma(object):
         return self.normal_prior.maximum_a_posteriori_estimate()
 
 
+class MultivariateNormalWithFixedMeasurementError(object):
+    def __init__(self, normal_prior, scale):
+        self.normal_prior = normal_prior
+        self.scale = scale
+
+    def sample(self):
+        return self.normal_prior.sample(self.scale)
+
+    def next(self, x, y):
+        x = tf.convert_to_tensor(x)
+        y = tf.convert_to_tensor(y)
+
+        x_T = tf.transpose(x)
+        weighted_feature_sums = x_T @ y
+        empirical_precision = x_T @ x
+
+        normal_posterior = self.normal_prior.next(weighted_feature_sums,
+                                                  empirical_precision)
+        return self.__class__(normal_posterior, self.scale)
+
+    def maximum_a_posteriori_estimate(self):
+        return self.normal_prior.maximum_a_posteriori_estimate()
+
+
 class BayesianLinearRegressionDistribution(object):
     @classmethod
     def all(cls,
@@ -159,11 +183,22 @@ class BayesianLinearRegressionDistribution(object):
         for mean, log_precision, log_ig_mode, log_ig_shape in product(
                 mean_params, log_precision_params, log_ig_mode_params,
                 log_ig_shape_params):
-            ig = InverseGamma.from_log_mode_and_log_shape(
-                log_ig_mode, log_ig_shape)
-            normal = ImproperMultivariateNormal.from_shared_mean_and_log_precision(
-                mean=mean, log_precision=log_precision, num_dims=num_features)
-            prior = MultivariateNormalInverseGamma(normal, ig)
+
+            if np.isinf(log_ig_shape):
+                normal = ImproperMultivariateNormal.from_shared_mean_and_log_precision(
+                    mean=mean,
+                    log_precision=log_precision,
+                    num_dims=num_features)
+                prior = MultivariateNormalWithFixedMeasurementError(
+                    normal, tf.exp(log_ig_mode))
+            else:
+                ig = InverseGamma.from_log_mode_and_log_shape(
+                    log_ig_mode, log_ig_shape)
+                normal = ImproperMultivariateNormal.from_shared_mean_and_log_precision(
+                    mean=mean,
+                    log_precision=log_precision,
+                    num_dims=num_features)
+                prior = MultivariateNormalInverseGamma(normal, ig)
 
             yield (
                 cls(prior).train(phi, y),
