@@ -59,11 +59,12 @@ class MultivariateNormal(object):
         self.covariance_scale = tf.matrix_triangular_solve(
             L, tf.eye(L.shape[0].value))
 
-        self.distribution = tf.contrib.distributions.MultivariateNormalTriL(
-            tf.transpose(self.means), self.covariance_scale)
-
         self._weighted_precision_sums = None
         self._quadratic_form = None
+
+    def distribution(self, scale=1.0):
+        return tf.contrib.distributions.MultivariateNormalTriL(
+            tf.transpose(self.means), scale * self.covariance_scale)
 
     @property
     def weighted_precision_sums(self):
@@ -78,8 +79,8 @@ class MultivariateNormal(object):
                 self.means, self.weighted_precision_sums, transpose_a=True)
         return self._quadratic_form
 
-    def sample(self):
-        return tf.transpose(self.distribution.sample())
+    def sample(self, scale=1.0):
+        return tf.transpose(self.distribution(scale).sample())
 
     def next(self, weighted_feature_sums, empirical_precision):
         return self.__class__(
@@ -118,11 +119,7 @@ class MultivariateNormalInverseGamma(object):
         self.ig_prior = ig_prior
 
     def sample(self):
-        scale = self.ig_prior.sample()
-        d = tf.contrib.distributions.MultivariateNormalTriL(
-            tf.transpose(self.normal_prior.means),
-            scale * self.normal_prior.covariance_scale)
-        return tf.transpose(d.sample())
+        return self.normal_prior.sample(self.ig_prior.sample())
 
     def next(self, x, y):
         x = tf.convert_to_tensor(x)
